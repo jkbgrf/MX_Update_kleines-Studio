@@ -1,6 +1,6 @@
-/*
+/*   EDIT by JAKOB GREIF
 
-real SC InputBus > MXInterface input > [ MXInput > MXInDevice > MXBus ]   
+real SC InputBus > MXInterface input > [ MXInput > MXInDevice > MXBus ]
 
 >>   [MXBus > MXConnection (MXNode(s)) > MXBus ] >>
 
@@ -13,44 +13,44 @@ real SC InputBus > MXInterface input > [ MXInput > MXInDevice > MXBus ]
 
 MXBus {
 /*
-- represents and manages a single audio bus 
-		
-*/	
+- represents and manages a single audio bus
+
+*/
 	var <num;			// Integer: SC private audio bus number
 	var <index;			// Integer: SC private audio bus number (same as num !!)
 	var <bus;			// Bus (SC Bus object (audio) )
-	
+
 	*new { // arg num;		// num provided by a bus allocator or MXIOManager ??
 		^super.new.init( /*num*/ )
 	}
-	
+
 	init { /*arg argnum;*/
 	//	num = argnum;
-	//	bus = Bus(\audio, num, 1, MXGlobals.server);  
+	//	bus = Bus(\audio, num, 1, MXGlobals.server);
 		bus = Bus.audio(MXGlobals.server, 1);
 		num = bus.index;
 		index = num;
-	}	
-	
-	busNum {
-		^bus.index	
 	}
-	
+
+	busNum {
+		^bus.index
+	}
+
 	free {
-		bus.free;	
-	}	
-	
+		bus.free;
+	}
+
 }
 
 /*
 
 MXDeviceChannel {
-/*	
+/*
 - single channel for MXDevice
 	- active, gain, phase, delay
 	- 1 synth
 	- 1 meter
-*/	
+*/
 	classvar <defName = "MXDeviceChannel";
 	classvar <defNameDelay = "MXDeviceChannelDelay";
 
@@ -59,14 +59,14 @@ MXDeviceChannel {
 	var <in;				// Integer: busindex
 	var <out;			// Integer: busindex
 //	var <group;			// target for synthnode
-	var active; 			// MXCV: [0, 1]   
-	var <gain;			// MXCV: gain in dB  
-	var <phase; 			// MXCV: [0, 1]  (1 = 180¡)  
+	var active; 			// MXCV: [0, 1]
+	var <gain;			// MXCV: gain in dB
+	var <phase; 			// MXCV: [0, 1]  (1 = 180ï¿½)
 	var <delay;			// MXCV: delay in ms  (!!!)
 	var <synth;			// Synthnode
-//	var <meters;			// MXSimpleMeter 
+//	var <meters;			// MXSimpleMeter
 
-	*initClass {		
+	*initClass {
 	/*     // single channel synthdefs now replaced by multichannel synthdefs (one per MXDevice) !		MXGlobals.synthdefs.add (
 			SynthDef(defName, { arg in=0, out=1, gain=0.0, on=1, gate=1;			var sig;
 				sig = In.ar(in, 1);
@@ -85,7 +85,7 @@ MXDeviceChannel {
 			}, [\ir, \ir, MXGlobals.levelrate, MXGlobals.delayrate, MXGlobals.switchrate, 0] );
 		);
 	*/
-	}	
+	}
 
 	*new { arg device, num, in, out, active=0;
 		^super.new.init(device, num, in, out, active);
@@ -96,52 +96,52 @@ MXDeviceChannel {
 		num = argnum;
 		in = argin;
 		out = argout;
-		gain = MXCV( ControlSpec(MXGlobals.dbmin, MXGlobals.dbmax, \lin, 0), 0.0);   
-		phase = MXCV( ControlSpec(-1, 1, \lin, 1), 1);   
-		delay = MXCV( ControlSpec(0, MXGlobals.delaymax * 1000, \lin, 0), 0.0);   
-		active = MXCV( ControlSpec(0, 1, \lin, 1), argactive);  
-		active.action = { arg changer, what; 
+		gain = MXCV( ControlSpec(MXGlobals.dbmin, MXGlobals.dbmax, \lin, 0), 0.0);
+		phase = MXCV( ControlSpec(-1, 1, \lin, 1), 1);
+		delay = MXCV( ControlSpec(0, MXGlobals.delaymax * 1000, \lin, 0), 0.0);
+		active = MXCV( ControlSpec(0, 1, \lin, 1), argactive);
+		active.action = { arg changer, what;
 			if (changer.value == 1) {
 				this.startDSP;
 			} {
 				this.stopDSP;
-			};	
+			};
 		//	if ( changer.value == 1 ) { this.makeSynth } { this.removeSynth };
 		};
 	//	("Device channel added:" + device.name + device.type + num).postln;
-	
+
 	}
 
 	active_ { arg value;
-		active.value = value;		
+		active.value = value;
 	}
-	
+
 	active {
-		^active.value;		
+		^active.value;
 	}
 
 	makeSynth {
 		if (delay.value > 0.0) {
-			synth = Synth.controls(defNameDelay, 
-				[ 	in: in, 
-					out: out, 
+			synth = Synth.controls(defNameDelay,
+				[ 	in: in,
+					out: out,
 				//	meterout: MXMeterManager.multiMeter.busArray[num].index,
 				//	spectralout: MXMeterManager.fft.busArray[0].index,
 					//	on: [device.mute, 1 - device.mute],
 					on: [device.mute, { 1 - device.mute.value } ],
-					gain: [ [gain, device.gain, phase, device.phase], 
-						(gain + device.gain).dbamp * (phase * device.phase) ], 
+					gain: [ [gain, device.gain, phase, device.phase],
+						(gain + device.gain).dbamp * (phase * device.phase) ],
 					delay: [ [delay, device.delay], (delay + device.delay) * 0.001],
 				],
 				device.group)
 		} {
-			synth = Synth.controls(defName, 
-				[ 	in: in, 
-					out: out, 
+			synth = Synth.controls(defName,
+				[ 	in: in,
+					out: out,
 				//	meterout: MXMeterManager.multiMeter.busArray[num].index,
 				//	spectralout: MXMeterManager.fft.busArray[0].index,
 					on: [device.mute, { 1 - device.mute.value } ],
-					gain: [ [gain, device.gain, phase, device.phase], 
+					gain: [ [gain, device.gain, phase, device.phase],
 						(gain + device.gain).dbamp * (phase * device.phase) ],
 				],
 				device.group)
@@ -153,36 +153,36 @@ MXDeviceChannel {
 	}
 
 	remove {
-		// this.removeSynth;	
+		// this.removeSynth;
 		// this.stopDSP;
 		this.active_(0);
 	}
-		
+
 	gain_ { arg value;
-		gain.value = value;	
+		gain.value = value;
 	}
 
 	phase_ { arg value;
-		phase.value = value;	
+		phase.value = value;
 	}
 
-	delay_ { arg value;		
-		if ( ((value > 0) && (delay.value == 0))  ||Ê ((value == 0) && (delay.value > 0)) ) {
+	delay_ { arg value;
+		if ( ((value > 0) && (delay.value == 0))  ||ï¿½ ((value == 0) && (delay.value > 0)) ) {
 			this.removeSynth;
-			delay.value = value;	
-			this.makeSynth; 
-		} { 	
-			delay.value = value;	
+			delay.value = value;
+			this.makeSynth;
+		} {
+			delay.value = value;
 		};
 	}
 
-	startDSP { 
+	startDSP {
 		this.makeSynth;
 	}
-	
+
 	stopDSP {
 		this.	removeSynth;
-	}	
+	}
 
 }
 
@@ -202,13 +202,13 @@ MXDevice {
 - simple level meter for each channel
 
 editable by MXDeviceManager
-	
+
 */
 	var <name;			// String or Symbol
 	var <type;			// Symbol: [\in, \out]
-	var <>sampleRates;	// Array of Floats, indicating the valid sampleRates of this virtual device 
-	var <ioDict;			// Dictionary:   samplingrate -> [ <Array of MXIOs (\in or \out)> ] 
-//	var <ioBusArray;		// Dictionary:   samplingrate -> [ <Array of (IO) busNums > ] 	
+	var <>sampleRates;	// Array of Floats, indicating the valid sampleRates of this virtual device
+	var <ioDict;			// Dictionary:   samplingrate -> [ <Array of MXIOs (\in or \out)> ]
+//	var <ioBusArray;		// Dictionary:   samplingrate -> [ <Array of (IO) busNums > ]
 	var <busArray;		// Array of (private) MXBusses
 //	var <channels;		// Array of MXDeviceChannels
 	var <numChannels;	// Integer, number of channels / busses of this device
@@ -219,18 +219,18 @@ editable by MXDeviceManager
 	// global:
 //	var <target;			// Parent Group Node
 	var <group;			// Group (Node) for Synths
-	var <synth;			
-	var <active; 			// MXCV: [0, 1]  
-	var <mute;			// MXCV: [0, 1]   
+	var <synth;
+	var <active; 			// MXCV: [0, 1]
+	var <mute;			// MXCV: [0, 1]
 	var <>gainoffset = 0;	// Float: device gain in dB, from devices.txt
-	var <gain;			// MXCV: gain in dB, for controllers  
+	var <gain;			// MXCV: gain in dB, for controllers
 	var <>phaseoffset = 1; // Float: device phase factor [-1, 1], from devices.txt
-	var <phase; 			// MXCV: [-1, 1]  (1 = 180¡)  
+	var <phase; 			// MXCV: [-1, 1]  (1 = 180ï¿½)
 	var <>delayoffset = 0;	// Float: device delay in ms, from devices.txt
-	var <delay;			// MXCV: delay in ms   
-	var <meter;			// MXSimpleMeter 
+	var <delay;			// MXCV: delay in ms
+	var <meter;			// MXSimpleMeter
 	var <monitorConnections;	// Dictionary of MXConnections (for monitoring !)
-	var <routDict;		// Dictionary / Order for usable (according to the available device channels!) monitorpresets:   
+	var <routDict;		// Dictionary / Order for usable (according to the available device channels!) monitorpresets:
 						// presetname -> [input, output, gain in dB]
 	var <routSV;			// MXSV: [presetnames], symbols for routings menue, item / value = selected routing
 	var <controlSV;		// MXSV: [fader nums], associated MIDI fader
@@ -243,8 +243,10 @@ editable by MXDeviceManager
 	var <>guifunc;		// Function to change Views according to active
 	var <>ctlgainfunc;	// Function for connecting this gain MXCV to the MXMIDI control model
 	var <>ctlmutefunc;	// Function for connecting this mute MXCV to the MXMIDI control model
-	
-	
+	var <madiChannelDict;   //Dictionary with Madi Channel and Name of conected Device
+ 	var <madiChannelSV;     //MXCV[Channel Names] Symbols for Madi Channel Selection Menu
+
+
 	*new { arg name, type, ioDict;
 		^super.new.init(name, type, ioDict);
 	}
@@ -254,7 +256,8 @@ editable by MXDeviceManager
 		name = argname ? "noname";
 		type = argtype;
 		routDict = Dictionary.new;
-		
+		madiChannelDict = Dictionary.new;
+
 		monitorConnections = Dictionary.new;
 		monitorConnections.add( \main -> nil );
 		monitorConnections.add( \sub -> nil );
@@ -266,31 +269,42 @@ editable by MXDeviceManager
 		monitorConnections.add( \spectral -> nil );
 
 		// init global CVs
-		gain = MXCV( ControlSpec(MXGlobals.dbmin, MXGlobals.dbmax, \lin, 0.5), 0.0);   
-/*		gain.action = {Êarg changer, what;
+		gain = MXCV( ControlSpec(MXGlobals.dbmin, MXGlobals.dbmax, \lin, 0.5), 0.0);
+/*		gain.action = {ï¿½arg changer, what;
 			if (ctlgainfunc.notNil) { ctlgainfunc.value(changer.value) };
 		};
 */
-		phase = MXCV( ControlSpec(-1, 1, \lin, 1), 1);   
-		delay = MXCV( ControlSpec(0, MXGlobals.delaymax * 1000, \lin, 0), 0.0);   
+		phase = MXCV( ControlSpec(-1, 1, \lin, 1), 1);
+		delay = MXCV( ControlSpec(0, MXGlobals.delaymax * 1000, \lin, 0), 0.0);
 		mute = MXCV( ControlSpec(0, 1, \lin, 1), 0);   // called by GUI mute button
 		active = MXCV( ControlSpec(0, 1, \lin, 1), 0);  // + action ??
-		active.action = { arg changer, what;  
+		active.action = { arg changer, what;
 			guifunc.value(active.value);
 			if (changer.value == 1) {
 				switch (type)
-					{ \in } 	{Êthis.startDSP(MXMain.deviceManager.inGroup) }  					{ \out } 	{Êthis.startDSP(MXMain.deviceManager.outGroup) }  
-					;	
+					{ \in } 	{ï¿½this.startDSP(MXMain.deviceManager.inGroup) }
+					{ \madibridgeIN } 	{ï¿½this.startDSP(MXMain.deviceManager.inGroup) }  					{ \out } 	{ï¿½this.startDSP(MXMain.deviceManager.outGroup) }
+					;
 			} {
 				this.stopDSP;
-			// 	+ disable buttons: M, P, N, X, and menu ?	
-			};	
+			// 	+ disable buttons: M, P, N, X, and menu ?
+			};
 		};
-		
+
+	// Madi Channel SV and Action
+
+		madiChannelSV = MXSV( [ nil ], 0);
+		madiChannelSV.action = {arg changer, what;
+			if (active.value == 1) { // turn of routings?
+			MXMadiBridge.changeMadiChannel(madiChannelDict[madiChannelSV.item]);
+			};
+		};
+
+	// important for the Connection Dict! 	hier ein Funktion mit Madi Bridge Routings aus MXMadiBridge
 	//	routSV = MXSV( [ \off, \matrix ], 0);   	// has always at least these two items!
 	//	routSV = MXSV( [ \off ], 0);   	// has always at least this item!
-		routSV = MXSV( [ nil  ], 0);   	 
-		routSV.action = { arg changer, what;  
+		routSV = MXSV( [ nil  ], 0);
+		routSV.action = { arg changer, what;
 			if ( active.value == 1 ) {
 				// remove existing connections:
 				if ( monitorConnections[ \main ].notNil ) {
@@ -302,20 +316,20 @@ editable by MXDeviceManager
 					monitorConnections[ \sub ] = nil;
 				};
 				if ( routSV.value > 0 ) {
-					// make a new connection:	
+					// make a new connection:
 					if (routSV.item == \matrix) {
 						// open local matrix editor window ...
 					} {
-						monitorConnections[ \main ] = 
+						monitorConnections[ \main ] =
 							MXMatrixManager.makeConnectionFromMonitorPreset(this, routDict[routSV.item]);
-						monitorConnections[ \sub ] = 
+						monitorConnections[ \sub ] =
 							MXMatrixManager.makeSubConnectionFromMonitorPreset(this, routDict[routSV.item]);
 					}
-				};	
+				};
 			};
 		};
 
-		controlSV = MXSV( ['MIDI off'] ++ (1 .. 8).collect({ arg i; ("fader" + i).asSymbol }) , 0);   
+		controlSV = MXSV( ['MIDI off'] ++ (1 .. 8).collect({ arg i; ("fader" + i).asSymbol }) , 0);
 		controlSV.action = { arg changer, what;
 			// disconnect the old connections to MIDI (remove all SimpleControllers to and from gain and mute)
 			MXMIDI.disconnectControlFromMIDI(gain);
@@ -327,170 +341,194 @@ editable by MXDeviceManager
 				MXMIDI.connectControlToMIDI(mute, ("devicemute" ++ changer.value.asString).asSymbol, name);
 			//	MXMIDI.connectControlToMIDI(mute, ("deviceon" ++ changer.value.asString).asSymbol, name, inverted: true);
 			//	MXMIDI.connectControlToMIDI(active, ("deviceon" ++ changer.value.asString).asSymbol, name);
-			}	
-			
-		};	 
-		phones = MXCV( ControlSpec(0, 1, \lin, 1), 0);			phones.action = { arg changer, what;  
+			}
+
+		};
+		phones = MXCV( ControlSpec(0, 1, \lin, 1), 0);			phones.action = { arg changer, what;
 			if ( (phones.value == 0) &&  monitorConnections[ \phones ].notNil ) {
 				monitorConnections[ \phones ].disconnect;
 				monitorConnections[ \phones ] = nil;
 			};
 			if ( (active.value == 1) &&  (phones.value == 1) && monitorConnections[ \phones ].isNil ) {
-				monitorConnections[ \phones ] = 
+				monitorConnections[ \phones ] =
 					MXConnection(MXMatrixManager.monitorGroup, this, MXMonitorManager.phonesMonitor, \simple);			};
 		};
 
-		near = MXCV( ControlSpec(0, 1, \lin, 1), 0);			near.action = { arg changer, what;  
+		near = MXCV( ControlSpec(0, 1, \lin, 1), 0);			near.action = { arg changer, what;
 			if ( (near.value == 0) &&  monitorConnections[ \near ].notNil ) {
 				monitorConnections[ \near ].disconnect;
 				monitorConnections[ \near ] = nil;
 			};
 			if ( (active.value == 1) &&  (near.value == 1) && monitorConnections[ \near ].isNil ) {
-				monitorConnections[ \near ] = 
+				monitorConnections[ \near ] =
 					MXConnection(MXMatrixManager.monitorGroup, this, MXMonitorManager.nearMonitor, \simple);			};
 		};
 
-		wfs = MXCV( ControlSpec(0, 1, \lin, 1), 0);			wfs.action = { arg changer, what;  
+		wfs = MXCV( ControlSpec(0, 1, \lin, 1), 0);			wfs.action = { arg changer, what;
 			if ( (wfs.value == 0) &&  monitorConnections[ \wfs ].notNil ) {
 				monitorConnections[ \wfs ].disconnect;
 				monitorConnections[ \wfs ] = nil;
 			};
 			if ( (active.value == 1) &&  (wfs.value == 1) && monitorConnections[ \wfs ].isNil ) {
-				monitorConnections[ \wfs ] = 
+				monitorConnections[ \wfs ] =
 					MXConnection(MXMatrixManager.monitorGroup, this, MXMonitorManager.wfsMonitor, \simple);			};
 		};
 
-		dome = MXCV( ControlSpec(0, 1, \lin, 1), 0);			dome.action = { arg changer, what;  
+		dome = MXCV( ControlSpec(0, 1, \lin, 1), 0);			dome.action = { arg changer, what;
 			if ( (dome.value == 0) &&  monitorConnections[ \dome ].notNil ) {
 				monitorConnections[ \dome ].disconnect;
 				monitorConnections[ \dome ] = nil;
 			};
 			if ( (active.value == 1) &&  (dome.value == 1) && monitorConnections[ \dome ].isNil ) {
-				monitorConnections[ \dome ] = 
+				monitorConnections[ \dome ] =
 					MXConnection(MXMatrixManager.monitorGroup, this, MXMonitorManager.domeMonitor, \simple);			};
 		};
 
-		multimeter = MXCV( ControlSpec(0, 1, \lin, 1), 0);		multimeter.action = { arg changer, what;  
+		multimeter = MXCV( ControlSpec(0, 1, \lin, 1), 0);		multimeter.action = { arg changer, what;
 			if ( (multimeter.value == 0) &&  monitorConnections[ \multimeter ].notNil ) {
 				monitorConnections[ \multimeter ].disconnect;
 				monitorConnections[ \multimeter ] = nil;
 				MXMeterManager.registerMultiMeterRequests(false);
 			};
 			if ( (active.value == 1) &&  (multimeter.value == 1) && monitorConnections[ \multimeter ].isNil ) {
-				monitorConnections[ \multimeter ] = 
+				monitorConnections[ \multimeter ] =
 					MXConnection(MXMatrixManager.monitorGroup, this, MXMeterManager.multiMeter, \simple);				MXMeterManager.registerMultiMeterRequests(true);
 			};
 		};
 
-		spectral = MXCV( ControlSpec(0, 1, \lin, 1), 0);		spectral.action = { arg changer, what;  
+		spectral = MXCV( ControlSpec(0, 1, \lin, 1), 0);		spectral.action = { arg changer, what;
 			if ( (spectral.value == 0) &&  monitorConnections[ \spectral ].notNil ) {
 				monitorConnections[ \spectral ].disconnect;
 				monitorConnections[ \spectral ] = nil;
 				MXMeterManager.registerAnalyserRequests(false);
 			};
 			if ( (active.value == 1) &&  (spectral.value == 1) && monitorConnections[ \spectral ].isNil ) {
-				monitorConnections[ \spectral ] = 
+				monitorConnections[ \spectral ] =
 					MXConnection(MXMatrixManager.monitorGroup, this, MXMeterManager.fft, \auto);
 				MXMeterManager.registerAnalyserRequests(true);
 			};
-		
+
 		};
-		
+
 //		this.makeIOs; // immer auch beim Wechsel der sampleRate !
 //		this.makeChannels;
-		("Device added:" + type + name).postln;	
+		("Device added:" + type + name).postln;
 	}
 
 	gain_ { arg value;
 		if (value != gain.value) {
-			gain.value = value;	
+			gain.value = value;
 		};
 	}
 
 	phase_ { arg value;
 		if (value != phase.value) {
-			phase.value = value;	
+			phase.value = value;
 		};
 	}
 
-	delay_ { arg value;		
+	delay_ { arg value;
 		if (value != delay.value) {
-			if ( ((value > 0) && (delay.value == 0))  ||Ê ((value == 0) && (delay.value > 0)) ) {
+			if ( ((value > 0) && (delay.value == 0))  ||ï¿½ ((value == 0) && (delay.value > 0)) ) {
 				this.removeSynth;
-				delay.value = value;	
-				this.makeSynth; 
-			} { 	
-				delay.value = value;	
+				delay.value = value;
+				this.makeSynth;
+			} {
+				delay.value = value;
 			};
 		}
 	}
-	
+
 	active_ { arg value;	// called by GUI-activation (device title button)
 		if (value != active.value) {
-			active.value = value;	
+			active.value = value;
 		};
 	}
 
 	mute_ { arg value;	// called by GUI mute button
 		if (value != mute.value) {
-			mute.value = value;	
+			mute.value = value;
 		};
 	}
 
-	routSV_ { arg value;		
+	routSV_ { arg value;
 		if (value != routSV.value) {
-			routSV.value = value;	
-		}
+			routSV.value = value;
+		};
 	}
 
-	routSVItem_ { arg item;		
+	madiChannelSV_ { arg value;
+		if (value != madiChannelSV.value) {
+			madiChannelSV.value = value;
+		};
+	}
+
+	routSVItem_ { arg item;
 		if (item != routSV.item) {
-			routSV.item = item;	
-		}
+			routSV.item = item;
+		};
 	}
 
-	controlSV_ { arg value;		
+	madiChannelSVItem_ { arg item;
+		if (item != madiChannelSV.item) {
+			madiChannelSV.item = item;
+		};
+	}
+
+	controlSV_ { arg value;
 		if (value != controlSV.value) {
-			controlSV.value = value;	
-		}
+			controlSV.value = value;
+		};
 	}
 
-	phones_ { arg value;		
+	phones_ { arg value;
 		if (value != phones.value) {
-			phones.value = value;	
-		}
+			phones.value = value;
+		};
 	}
 
-	near_ { arg value;		
+	near_ { arg value;
 		if (value != near.value) {
-			near.value = value;	
-		}
+			near.value = value;
+		};
 	}
 
-	wfs_ { arg value;		
+	wfs_ { arg value;
 		if (value != wfs.value) {
-			wfs.value = value;	
-		}
+			wfs.value = value;
+		};
 	}
 
-	dome_ { arg value;		
+	dome_ { arg value;
 		if (value != dome.value) {
-			dome.value = value;	
-		}
+			dome.value = value;
+		};
 	}
 
-	multimeter_ { arg value;		
+	multimeter_ { arg value;
 		if (value != multimeter.value) {
-			multimeter.value = value;	
-		}
+			multimeter.value = value;
+		};
 	}
 
-	spectral_ { arg value;		
+	spectral_ { arg value;
 		if (value != spectral.value) {
-			spectral.value = value;	
-		}
+			spectral.value = value;
+		};
 	}
 
+	getMadiChannels {
+		var name, channel;
+		//madiChannelDict = MXMadiBridge.madiBridgeChannels;
+		madiChannelSV.items = ["choose input Source"];
+
+		MXMadiBridge.madiBridgeChannels.do({arg assoc, r;
+			name = assoc.key.asSymbol;
+			channel = assoc.value.asInteger;  //oder als Integer/Hex
+			madiChannelDict.add(name -> channel);
+			madiChannelSV.items = madiChannelSV.items ++ name;
+		});
+	}
 
 
 
@@ -508,20 +546,20 @@ editable by MXDeviceManager
 				});
 			};
 		});
-	}	
+	}
 
 	removeMonitorPresets {
 		routDict.clear;
 		routSV.items = [ \off ];
 		routSV.value = 0;  // resets routing menu
-	}	
-	
+	}
+
 	removeMonitorConnections {
 		monitorConnections.keysValuesDo { arg key, conn, i;
 			if (conn.notNil) {
 				conn.remove;
 				monitorConnections[key] = nil;
-			};	
+			};
 		};
 		// monitorConnections.clear;
 	}
@@ -532,28 +570,33 @@ editable by MXDeviceManager
 
 		// make busArray for current samplerate
 		ioArray = ioDict[ srspeed ];
-		busArray = ioArray.collect {Êarg io, i;  MXDeviceManager.getNewBus };
+		busArray = ioArray.collect {ï¿½arg io, i;  MXDeviceManager.getNewBus };
 		numChannels = ioArray.size;
-		
+
 		switch (type)
-			{ \in } 	{Ê	inputs = ioArray;  		// Array of MXInputs
-						outputs = busArray; 	// Array of MXBusses 
-					}	
-			{ \out } 	{Ê	inputs = busArray; 	// Array of MXBusses 
+			{ \in } 	{ï¿½	inputs = ioArray;  		// Array of MXInputs
+						outputs = busArray; 	// Array of MXBusses
+					}
+			{ \madibridgeIN } 	{ï¿½	inputs = ioArray; 	// Array of MXInputs  added by jg
+						outputs = busArray; 	     // Array of MXBusses
+					}
+			{ \out } 	{ï¿½	inputs = busArray; 	// Array of MXBusses
 						outputs = ioArray;  	// Array of MXOutputs
-					}	
+					}
 			;
 		inputNums = inputs.collect(_.busNum);
 		outputNums = outputs.collect(_.busNum);
-		
+
 		// remove existing channels and meter before??
 		this.makeSynthDef;
 	//	this.makeChannels;
-	//	if (type ==  \in) {Êmeter = MXSimpleMeter(this, busArray.collect(_.busNum)) };
+	//	if (type ==  \in) {ï¿½meter = MXSimpleMeter(this, busArray.collect(_.busNum)) };
 		meter = MXSimpleMeter(this, outputs);
 		this.getMonitorPresets;
+		//if (type == \madibridgeIN){this.getMadiChannels}
+		this.getMadiChannels;
 	}
-	
+
 	unsetSR { // to be called before sample rate changes
 		this.removeMonitorPresets;
 		meter.remove;
@@ -564,19 +607,19 @@ editable by MXDeviceManager
 
 	//	this.removeChannels;
 	}
-	
+
 /*
 	makeChannels {
 		var srspeed;
 		srspeed = MXGlobals.srspeeds[ MXGlobals.sampleRate ];
 
 		// make busArray for current samplerate
-		busArray = ioDict[ srspeed ].collect {Êarg io, i;  MXDeviceManager.getNewBus };
-		
+		busArray = ioDict[ srspeed ].collect {ï¿½arg io, i;  MXDeviceManager.getNewBus };
+
 		// make an inactive MXDeviceChannel for each MXIO !
 		switch (type)
-			{ \in } 	{Êchannels = ioDict[ srspeed ].collect {Êarg io, i; MXDeviceChannel(this, i, io.busNum, busArray[i].busNum, active.value) } }
-			{ \out } 	{Êchannels = busArray.collect {Êarg mxbus, i; MXDeviceChannel(this, i, mxbus.busNum, ioDict[ srspeed ][i].busNum, active.value) } }
+			{ \in } 	{ï¿½channels = ioDict[ srspeed ].collect {ï¿½arg io, i; MXDeviceChannel(this, i, io.busNum, busArray[i].busNum, active.value) } }
+			{ \out } 	{ï¿½channels = busArray.collect {ï¿½arg mxbus, i; MXDeviceChannel(this, i, mxbus.busNum, ioDict[ srspeed ][i].busNum, active.value) } }
 			;
 	}
 
@@ -585,7 +628,7 @@ editable by MXDeviceManager
 		channels.clear;
 		busArray.do(_.free);
 		busArray.clear;
-	}	
+	}
 */
 	makeSynthDef {
 
@@ -598,7 +641,7 @@ editable by MXDeviceManager
 			outputNums.collect({ arg bus, i; Out.ar(bus, sig[i]) });
 		//	Out.ar(outs, sig);
 		}, [MXGlobals.levelrate, MXGlobals.switchrate, 0] ).add(\global);
-			
+
 		SynthDef(name.asString + type.asString + "delay", { arg gain=0.0, delay=0.0, on=1, gate=1;			var sig;
 			sig = In.ar(inputNums);
 //			sig = ins.collect { arg in; In.ar(in, 1) };
@@ -608,19 +651,19 @@ editable by MXDeviceManager
 			outputNums.collect({ arg bus, i; Out.ar(bus, sig[i]) });
 		//	Out.ar(outs, sig);
 		}, [MXGlobals.levelrate, \ir /*MXGlobals.delayrate*/ , MXGlobals.switchrate, 0] ).add(\global);
-	}	
+	}
 
 	makeSynth {
 		if ((delay.value + delayoffset) > 0.0) {
-			synth = Synth.controls(name.asString + type.asString + "delay", 
+			synth = Synth.controls(name.asString + type.asString + "delay",
 				[ 	on: [mute, { 1 - mute.value } ],
-					gain: [ [gain, phase], (gain + gainoffset).dbamp * (phase * phaseoffset) ], 
+					gain: [ [gain, phase], (gain + gainoffset).dbamp * (phase * phaseoffset) ],
 				//	delay: [ delay, (delay + delayoffset) * 0.001],
 					delay: (delay.value + delayoffset) * 0.001,
 				], group)
 		} {
-			synth = Synth.controls(name.asString + type.asString, 
-				[ 	
+			synth = Synth.controls(name.asString + type.asString,
+				[
 					on: [mute, { 1 - mute.value } ],
 				//	on: [mute, mute.neg + 1 ],
 					gain: [ [gain, phase], (gain + gainoffset).dbamp * (phase * phaseoffset) ],
@@ -635,30 +678,30 @@ editable by MXDeviceManager
 	}
 
 	remove {
-		// this.removeSynth;	
+		// this.removeSynth;
 		// this.stopDSP;
 		this.active_(0);
 	}
 
-	startDSP { arg target; 
+	startDSP { arg target;
 	//	this.target = target;
 	//	target = target;
 		group = Group(target);
-		{ 	
-		//	channels.do {Êarg chan;  chan.active_(1) };
+		{
+		//	channels.do {ï¿½arg chan;  chan.active_(1) };
 			this.makeSynth;
 
-	//		if (type ==  \in) { 
+	//		if (type ==  \in) {
 				meter.active_(1);
 	//			 };
 		}.defer( MXGlobals.switchrate + 0.01 );
-	}	
-	
-	stopDSP {		 
-		// remove group and channel synths	
-	//	if (type ==  \in) { 
-			meter.active_(0); 
-			meter.rms.input = 0; 
+	}
+
+	stopDSP {
+		// remove group and channel synths
+	//	if (type ==  \in) {
+			meter.active_(0);
+			meter.rms.input = 0;
 			routSV.value = 0;
 			phones.value = 0;
 			near.value = 0;
@@ -668,26 +711,26 @@ editable by MXDeviceManager
 			spectral.value = 0;
 	//		};
 		this.removeMonitorConnections;
-	//	channels.do {Êarg chan;  chan.active_(0) };
+	//	channels.do {ï¿½arg chan;  chan.active_(0) };
 		this.removeSynth;
 		controlSV.value = 0; // disconnect MIDI
 		{ group.free }.defer( MXGlobals.switchrate + 0.01 );
 	}
-	
+
 	reset {
-		this.active_(1);	
-		this.mute_(mute.spec.default);	
-		this.gain_(gain.spec.default);	
-		this.phase_(phase.spec.default);	
-		this.delay_(delay.spec.default);	
-		this.routSV_(routSV.spec.default);	
-		this.controlSV_(controlSV.spec.default);	
-		this.phones_(phones.spec.default);	
-		this.near_(near.spec.default);	
-		this.dome_(dome.spec.default);	
-		this.wfs_(wfs.spec.default);	
-		this.multimeter_(multimeter.spec.default);	
-		this.spectral_(spectral.spec.default);	
+		this.active_(1);
+		this.mute_(mute.spec.default);
+		this.gain_(gain.spec.default);
+		this.phase_(phase.spec.default);
+		this.delay_(delay.spec.default);
+		this.routSV_(routSV.spec.default);
+		this.controlSV_(controlSV.spec.default);
+		this.phones_(phones.spec.default);
+		this.near_(near.spec.default);
+		this.dome_(dome.spec.default);
+		this.wfs_(wfs.spec.default);
+		this.multimeter_(multimeter.spec.default);
+		this.spectral_(spectral.spec.default);
 	}
 
 	getValues {
@@ -720,51 +763,51 @@ editable by MXDeviceManager
 		if (dict.includesKey( \dome )) 		{ this.dome_(dict[\dome]); };
 		if (dict.includesKey( \multimeter )) 	{ this.multimeter_(dict[\multimeter]); };
 		if (dict.includesKey( \spectral )) 	{ this.spectral_(dict[\spectral]); };
-		if (dict.includesKey( \routing )) 		{ if (routSV.items.includesEqual(dict[\routing])) { 
+		if (dict.includesKey( \routing )) 		{ if (routSV.items.includesEqual(dict[\routing])) {
 											this.routSVItem_(dict[\routing]);
-											//	routSV.item = dict[\routing] 
+											//	routSV.item = dict[\routing]
 											} {
 												("monitor routing" + dict[\routing] + "doesn't exist !").warn;
 											};
 										};
 		if (dict.includesKey( \control )) 		{ this.controlSV_(dict[\control]); };
 	}
-	
+
 }
 
 /*
 MXInDevice : MXDevice {
 	// represents a device which sends signals into the system / matrix
 	// MXInputs -> MXDevice synths -> MXBusses
-	var <type = \in; 
-/*	
+	var <type = \in;
+/*
 	type {
-		^\in	
+		^\in
 	}
-*/	
+*/
 	inputs {
 		^ioDict		// Array of MXInputs
 	}
-	
+
 	outputs {
 		^busArray	// Array of MXBusses
 	}
-		
+
 }
 
 MXOutDevice : MXDevice {
 	// represents a device which gets signals from the system / matrix
 	// MXBusses  -> MXDevice synths -> MXOutputs
-	var <type = \out; 
+	var <type = \out;
 /*
 	type {
-		^\out	
+		^\out
 	}
 */
 	inputs {
 		^busArray		// Array of MXBusses
 	}
-	
+
 	outputs {
 		^ioDict			// Array of MXOutputs
 	}
@@ -773,7 +816,7 @@ MXOutDevice : MXDevice {
 */
 
 MXDeviceView {
-/*	
+/*
 	titleButton (device on/off)
 	meterView (simplemeter)
 	muteButton (on/off)
@@ -784,10 +827,10 @@ MXDeviceView {
 	routingMenu
 		alt: showMatrixButton (trigger)
 */
-	var <parent, <bounds;  // parent: sourcesTab of routingTabs
-	var <panel, <titleButton, <meterView, <muteButton, <gainNumber, <phonesButton, <nearButton, <wfsButton, <domeButton, <matrixButton;
+	var <parent, <bounds, dev;  // parent: sourcesTab of routingTabs
+	var <panel, <titleButton, <meterView, <muteButton, <gainNumber, <phonesButton, <nearButton, <wfsButton, <domeButton, <matrixButton ;
 	var <multimeterButton, <spectralButton;
-	var <routingMenu, <showMatrixButton;
+	var <routingMenu, <showMatrixButton, <madiTitleMenu;
 	var <controlMenu;
 	var <font, <smallFont, <titleFont;
 	var <backgroundColorOff, <backgroundColorOn;
@@ -796,14 +839,14 @@ MXDeviceView {
 	var <buttonFrameColor;
 	var <titleBackColorOff, <titleBackColorOn;
 	var <titleTextColorOff, <titleTextColorOn;
-	var <titleFrameColor;	
+	var <titleFrameColor;
 	var <device;	// associated inDevice
-	
-	*new { arg parent, bounds;
-		^super.new.initView(parent, bounds)
+
+	*new { arg parent, bounds, dev;
+		^super.new.initView(parent, bounds, dev)
 	}
 
-	initView { arg argparent, argbounds;
+	initView { arg argparent, argbounds, dev;
 		var panelrect, button1size, button2size, button3size, hgap=4, vgap=4, radius=5, shifty= 0, border=0;
 		parent = argparent;
 		bounds = argbounds.asRect;
@@ -822,7 +865,7 @@ MXDeviceView {
 		titleBackColorOn = Color.grey(0.7);
 		titleTextColorOff = Color.grey(0.0);
 		titleTextColorOn = Color.grey(0.0);
-		titleFrameColor = Color.grey(0.5);	
+		titleFrameColor = Color.grey(0.5);
 
 		panel = SCCompositeView(parent, bounds);
 		panel.background = Color.clear; // backgroundColorOn;
@@ -832,14 +875,23 @@ MXDeviceView {
 		button1size = Point(panelrect.width - (0*hgap), (panelrect.height - (4*vgap) - (0*hgap)) / 5);
 		button2size = Point((panelrect.width - (1*hgap) - 1) / 2, (panelrect.height - (4*vgap) - (0*hgap)) / 5);
 		button3size = Point((panelrect.width - (2*hgap) - 1) / 3, (panelrect.height - (4*vgap) - (0*hgap)) / 5);
-		
+
 	/*	titleButton = MXButton(panel, Rect(0, 0, panelrect.width, buttonsize.y))
 			.shifty_(shifty)
 			.states_([  ["device", titleTextColorOff, titleBackColorOff],
 					   ["device", titleTextColorOn, titleBackColorOn] ])
 			.font_(titleFont);
 	*/
-	
+
+		if (dev.type == \madibridgeIN) {
+		madiTitleMenu = SCPopUpMenu(panel, button1size)
+			.font_(titleFont)
+			.stringColor_(titleTextColorOn)
+			.background_(Color.blue(0.9,0.2))
+		 	.items_( (0 .. 3).collect(_.asString) );
+
+		}{
+
 		titleButton = MXStringView(panel, button1size, radius)
 			.shifty_(-2)
 			.font_(titleFont)
@@ -850,13 +902,16 @@ MXDeviceView {
 		//	.border_(1)
 		//	.borderColor_(Color.grey(0.5))
 			.inset_(0)
-			.string_("device");
+			.string_("device")
+			;
+		};
+
 
 		muteButton = MXButton(panel, button3size, radius)
 			.shifty_(shifty)
 			.states_([["mute", buttonTextColorOff, buttonBackColorOff ], ["mute", buttonTextColorOn, Color.red(1)]])
 			.font_(font);
-		
+
 		gainNumber = MXNumber(panel, button3size, radius)
 			.shifty_(shifty)
 			.border_(border)
@@ -867,7 +922,7 @@ MXDeviceView {
 			.background_(MXGUI.levelBackColor)
 			.stringColor_(MXGUI.levelColor)
 			.align_(\center)
-			;	
+			;
 
 		controlMenu = SCPopUpMenu(panel, button3size)
 			.font_(font)
@@ -918,11 +973,27 @@ MXDeviceView {
 			.stringColor_(buttonTextColorOn)
 			.background_(buttonBackColorOff)
 			.items_( (0 .. 5).collect(_.asString) )
+
 			;
-	
+		/*
+		madiTitleMenu = SCPopUpMenu(panel, button1size)
+			.shifty_(-2)
+			.font_(titleFont)
+			.stringColor_(titleTextColorOn)
+			.align_(\center)
+			.orientation_(\right)
+			.background_(titleBackColorOn)
+		//	.border_(1)
+		//	.borderColor_(Color.grey(0.5))
+			.inset_(0)
+		     .items_( (0 .. 5).collect(_.asString) )
+		//   .items_("madi1" , "madi 2", "madi 3")
+			;
+	 	*/
+
 		panel.decorator.reset;
-		panel.decorator.shift(4, 4);
-			
+		panel.decorator.shift(193, 4); // hier wird die MeterLed versetzt
+
 		meterView = MXLEDView(panel, 17@17)
 			.background_(Color.green(0.0, 0.8))
 			.color_(Color.green(1, 1))
@@ -930,18 +1001,19 @@ MXDeviceView {
 			.borderColor_(Color.black)
 			.value_(0)
 			;
-	}	
-	
-	enable {Êarg bool;
+	}
+
+	enable {ï¿½arg bool;
 		// titleButton and panelbackground	> device.active
 
 		if (bool) {
 			panel.background = backgroundColorOn;
 		} {
 			panel.background = backgroundColorOff;
-		};			
-		
+		};
+
 		phonesButton.visible_(bool);
+		madiTitleMenu.visible_(bool);
 	//	nearButton.visible_(bool);
 		wfsButton.visible_(bool);
 		domeButton.visible_(bool);
@@ -953,15 +1025,31 @@ MXDeviceView {
 		gainNumber.visible_(bool);
 		meterView.visible_(bool);
 	}
-	
+
 	connect { arg dev;
 		device = dev;
-		{	
+		{
+     	//	titleButton.connect(device.active);
+		//	this.enable(true);
+
+
+	// connecte madiTitleMenu mit dem madi Channel Select Value
+	if (device.type == \madibridgeIN) {
+				// madiTitleMenu.visible_(1);
+				// titleButton.visible_(0);
+		madiTitleMenu.connect(device.madiChannelSV);
+
+		}{
+				//titleButton.visible_(true);
+				//madiTitleMenu.visible_(false);
 		titleButton.string = device.name;
-	//	titleButton.connect(device.active);
-	//	this.enable(true);
-		dev.guifunc = {Êarg value;
-	//		this.enable(value.booleanValue);		
+		};
+
+
+
+
+		dev.guifunc = {ï¿½arg value;
+	//		this.enable(value.booleanValue);
 		};
 		meterView.connect(device.meter.rms);
 		gainNumber.connect(device.gain);
@@ -973,20 +1061,23 @@ MXDeviceView {
 		wfsButton.connect(device.wfs);
 		domeButton.connect(device.dome);
 		// matrixButton > ??
+
 		routingMenu.connect(device.routSV);
-		device.routSV.action = { arg changer, what;  
+
+		device.routSV.action = { arg changer, what;
 			if ( changer.value > 0 ) {
-				{ÊroutingMenu.background = Color.green; }.defer;
-			} { 
-				{ÊroutingMenu.background = buttonBackColorOff;}.defer;
+				{ï¿½routingMenu.background = Color.green; }.defer;
+			} {
+				{ï¿½routingMenu.background = buttonBackColorOff;}.defer;
 			}
 		};
+
 		controlMenu.connect(device.controlSV);
-		device.controlSV.action = { arg changer, what;  
+		device.controlSV.action = { arg changer, what;
 			if ( changer.value > 0 ) {
-				{ÊcontrolMenu.background = Color.yellow;  }.defer;
-			} { 
-				{ÊcontrolMenu.background = buttonBackColorOff; }.defer;
+				{ï¿½controlMenu.background = Color.yellow;  }.defer;
+			} {
+				{ï¿½controlMenu.background = buttonBackColorOff; }.defer;
 			}
 		};
 
@@ -994,13 +1085,13 @@ MXDeviceView {
 		// showMatrixButton > ??
 		}.defer;
 	}
-	
+
 	disconnect {
-		
-	}			
+
+	}
 
 
-}	
+}
 
 
 MXDeviceManager {  // singleton !
@@ -1011,14 +1102,14 @@ MXDeviceManager {  // singleton !
 	erzeugen, kopieren und loeschen von MXDevices
 	laden und speichern von einzelnen MXDevices
 	editieren von MXDevices (channels/MXIOs, name)
-	GUI (active, gain, phase, delay) und MXSimpleMeter anzeigen
+	GUI (, gain, phase, delay) und MXSimpleMeter anzeigen
 */
 	classvar <inDevices;		// Array of MXInDevices
 	classvar <outDevices;		// Array of MXOutDevices
 
 	classvar <inGroup;	// Node: target for server group for MXInDevices input synth nodes
 	classvar <outGroup;	// dito
-	
+
 	classvar <win, <view;		// GUI
 
 	*init {
@@ -1039,33 +1130,43 @@ MXDeviceManager {  // singleton !
 				// assoc.key = assoc.key.asSymbol;
 				dict.add( assoc.key.asSymbol -> assoc.value )
 			};
-			if (dict.includesKey( \inputs )) { 
-				dict[\inputs].do {Êarg assoc, i;
+			if (dict.includesKey( \inputs )) {
+				dict[\inputs].do {ï¿½arg assoc, i;
 					this.addDeviceFromArray(\in, [assoc.key] ++ assoc.value );
 				}
-			} { 
+			} {
 				"WARNING: no input devices found in file".postln;
 			};
-			if (dict.includesKey( \monitors )) { 
-				dict[\monitors].do {Êarg assoc, i;
-					this.addDeviceFromArray(\monitorout, [assoc.key] ++ assoc.value );
-					
+
+// abfrage ob madi bridge vorhanden
+			if (dict.includesKey( \madibridgeIN )) {
+				dict[\madibridgeIN].do {ï¿½arg assoc, i;
+					this.addDeviceFromArray(\madibridgeIN, [assoc.key] ++ assoc.value );
 				}
-			} { 
+			} {
+				"WARNING: no madi bridge Input routing found, Setup without madi bridge control".postln;
+			};
+
+			if (dict.includesKey( \monitors )) {
+				dict[\monitors].do {ï¿½arg assoc, i;
+					this.addDeviceFromArray(\monitorout, [assoc.key] ++ assoc.value );
+
+				}
+			} {
 				"WARNING: no monitor devices found in file".postln;
 			};
-			if (dict.includesKey( \outputs )) { 
-				dict[\outputs].do {Êarg assoc, i;
+			if (dict.includesKey( \outputs )) {
+				dict[\outputs].do {ï¿½arg assoc, i;
 					this.addDeviceFromArray(\out, [assoc.key] ++ assoc.value );
 				}
-			} { 
+			} {
 				"WARNING: no output devices found in file".postln;
 			};
 		} {
-			"FILE ERROR: devices.txt not found!".postln; 
-		};		
-	}	
-	
+			"FILE ERROR: devices.txt not found!".postln;
+		};
+	}
+
 	*addDeviceFromArray { arg type, array;
 		var device, cons, ioDict;
 		var name, gain, phase, latency, sampleRates, busNums;
@@ -1081,19 +1182,27 @@ MXDeviceManager {  // singleton !
 		busNums.add( 96000.0 -> array[2].clump(2).collect({ arg a; (a[0]..a[1]) }).flat.collect(_.asInteger - 1) );
 //		busNums.add( 48000.0 -> (( array[1][0] .. array[1][1] ) ).collect(_.asInteger - 1) );
 //		busNums.add( 96000.0 -> (( array[2][0] .. array[2][1] ) ).collect(_.asInteger - 1) );
-		if (type == \in) {
+		if (type == \in)  {
 			busNums[48000.0] = busNums[48000.0] + MXGlobals.numOutputs;
 			busNums[96000.0] = busNums[96000.0] + MXGlobals.numOutputs;
 		};
+
+
+		if (type == \madibridgeIN) {
+			busNums[48000.0] = busNums[48000.0] + MXGlobals.numOutputs;
+			busNums[96000.0] = busNums[96000.0] + MXGlobals.numOutputs;
+		};
+
 
 	//	busNums[48000.0].postln;
 		ioDict = Dictionary.new;
 		switch (type)
 		 	{\in} 			{ cons =  MXMain.ioManager.inputs }
+		 	{\madibridgeIN} 	{ cons =  MXMain.ioManager.inputs }  //added by jg
 		 	{\out} 			{ cons =  MXMain.ioManager.outputs }
 		 	{\monitorout} 	{ cons =  MXMain.ioManager.outputs }
 			;
-		
+
 		ioDict.add( 48000.0 ->  cons[48000.0].select({arg io, i;  busNums[48000.0].includes(io.busNum) }) );
 		ioDict.add( 96000.0 ->  cons[96000.0].select({arg io, i;  busNums[96000.0].includes(io.busNum) }) );
 	//	ioDict.postln;
@@ -1103,11 +1212,12 @@ MXDeviceManager {  // singleton !
 			device = MXMonitorDevice(name, type, ioDict);
 			device.function = function.asSymbol;
 			device.gain = (function == \sub).if(-20, -20);
-		} {   
+		} {
+			// ioDict.postln; type.postln; name.postln; //added by jg
 			device = MXDevice(name, type, ioDict);
 			device.gain = 0;
 		};
-			
+
 		device.gainoffset = gain;
 		device.phaseoffset = phase;
 		device.phase = 1;
@@ -1117,97 +1227,99 @@ MXDeviceManager {  // singleton !
 
 		switch (type)
 		 	{\in} 			{ inDevices.add(device) }
+		 	{\madibridgeIN} 	{ inDevices.add(device) } //added by jg
 		 	{\out} 			{ outDevices.add(device) }
-		 	{\monitorout} 	{ 
+		 	{\monitorout} 	{
 			 //	outDevices.add(device);
 			 	MXMonitorManager.addDevice(device);
 			 	 }
-		;		
+		;
+	inDevices.postln;
 	}
-	
+
 	*addDevice {
-		
+
 	}
-	
+
 	*removeDevice {
-		
+
 	}
-		
-	*getNewBus { 
+
+	*getNewBus {
 		// provides a new MXBus for MXDevices on demand
 	//	^MXBus( Bus.audio(MXGlobals.server, 1).index );
 		^MXBus.new;
 	}
-	
+
 	*releaseBus { arg mxbus;
 		mxbus.free;
 	}
 
 	*setSR { // to be called once sampleRate is known and server has been booted
-		"DeviceManager-setSR".postln;		
-		inDevices.do {Êarg d; d.setSR };
-		outDevices.do {Êarg d; d.setSR };
+		"DeviceManager-setSR".postln;
+		inDevices.do {ï¿½arg d; d.setSR };
+		outDevices.do {ï¿½arg d; d.setSR };
 	}
-	
+
 	*unsetSR { // to be called when sampleRate will be changed and before server reboots
-		inDevices.do {Êarg d; d.unsetSR };
-		outDevices.do {Êarg d; d.unsetSR };
+		inDevices.do {ï¿½arg d; d.unsetSR };
+		outDevices.do {ï¿½arg d; d.unsetSR };
 	}
-	
-	*startDSP { arg inTarget, outTarget; 
+
+	*startDSP { arg inTarget, outTarget;
 		"DeviceManager-startDSP".postln;
 		inGroup = inTarget;
 		outGroup = outTarget;
-		inDevices.do {Êarg d;   d.active = 1 };
-		outDevices.do {Êarg d;   d.active = 1 };
-	//	outDevices.do {Êarg d;   d.startDSP(outGroup) };
-	}	
-	
+		inDevices.do {ï¿½arg d;   d.active = 1 };
+		outDevices.do {ï¿½arg d;   d.active = 1 };
+	//	outDevices.do {ï¿½arg d;   d.startDSP(outGroup) };
+	}
+
 	*stopDSP {  // ??
-		inDevices.do {Êarg d; d.stopDSP };
-		outDevices.do {Êarg d; d.stopDSP };
+		inDevices.do {ï¿½arg d; d.stopDSP };
+		outDevices.do {ï¿½arg d; d.stopDSP };
 		{ inGroup.free; outGroup.free }.defer( MXGlobals.switchrate + 0.01 );
 	}
-	
+
 	*reset {
-		inDevices.do {Êarg d;   d.reset };
-		outDevices.do {Êarg d;   d.reset };
-	}	
-		
+		inDevices.do {ï¿½arg d;   d.reset };
+		outDevices.do {ï¿½arg d;   d.reset };
+	}
+
 	*getValues {
 		var dict = IdentityDictionary.new;
 		dict.add( \inDevices	-> inDevices.collect({ arg dev, i; (dev.name -> dev.getValues) }) );
 		dict.add( \outDevices	-> outDevices.collect({ arg dev, i; (dev.name -> dev.getValues) }) );
 		^dict;
 	}
-	
+
 	*setValues { arg dict;
-		if (dict.includesKey( \inDevices )) { 
+		if (dict.includesKey( \inDevices )) {
 			dict[\inDevices].do({ arg assoc;
 				var devname, devdict;
 				var index;
 				devname = assoc.key;
 				devdict = assoc.value;							index = inDevices.detectIndex({ arg dev;  dev.name == devname });
-				if (index.notNil) { 
-					inDevices[index].setValues(devdict); 
-				} {    
+				if (index.notNil) {
+					inDevices[index].setValues(devdict);
+				} {
 					("input device" + devname + "doesn't exist !").warn;
 				};
-			});	
+			});
 		};
-		if (dict.includesKey( \outDevices )) { 
+		if (dict.includesKey( \outDevices )) {
 			dict[\outDevices].do({ arg assoc;
 				var devname, devdict;
 				var index;
 				devname = assoc.key;
 				devdict = assoc.value;
 				index = outDevices.detectIndex({ arg dev;  dev.name == devname });
-				if (index.notNil) { 
-					outDevices[index].setValues(devdict); 
-				} {    
+				if (index.notNil) {
+					outDevices[index].setValues(devdict);
+				} {
 					("output device" + devname + "doesn't exist !").warn;
 				};
-			});	
+			});
 		};
 	}
 }
