@@ -1,4 +1,4 @@
-/*
+/*   EDIT by JAKOB GREIF
 
 real SC InputBus > MXInterface input > [ MXInput > MXInDevice > MXBus ]   
 
@@ -243,8 +243,10 @@ editable by MXDeviceManager
 	var <>guifunc;		// Function to change Views according to active
 	var <>ctlgainfunc;	// Function for connecting this gain MXCV to the MXMIDI control model
 	var <>ctlmutefunc;	// Function for connecting this mute MXCV to the MXMIDI control model
-	
-	
+	var <madiChannelDict;   //Dictionary with Madi Channel and Name of conected Device
+ 	var <madiChannelSV;     //MXCV[Channel Names] Symbols for Madi Channel Selection Menu
+ 	
+ 	
 	*new { arg name, type, ioDict;
 		^super.new.init(name, type, ioDict);
 	}
@@ -254,6 +256,7 @@ editable by MXDeviceManager
 		name = argname ? "noname";
 		type = argtype;
 		routDict = Dictionary.new;
+		madiChannelDict = Dictionary.new;
 		
 		monitorConnections = Dictionary.new;
 		monitorConnections.add( \main -> nil );
@@ -279,7 +282,8 @@ editable by MXDeviceManager
 			guifunc.value(active.value);
 			if (changer.value == 1) {
 				switch (type)
-					{ \in } 	{Êthis.startDSP(MXMain.deviceManager.inGroup) }  					{ \out } 	{Êthis.startDSP(MXMain.deviceManager.outGroup) }  
+					{ \in } 	{Êthis.startDSP(MXMain.deviceManager.inGroup) } 
+					{ \madibridgeIN } 	{Êthis.startDSP(MXMain.deviceManager.inGroup) }  					{ \out } 	{Êthis.startDSP(MXMain.deviceManager.outGroup) }  
 					;	
 			} {
 				this.stopDSP;
@@ -287,6 +291,16 @@ editable by MXDeviceManager
 			};	
 		};
 		
+	// Madi Channel SV and Action
+	
+		madiChannelSV = MXSV( [ nil ], 0);
+		madiChannelSV.action = {arg changer, what;
+			if (active.value == 1) { // turn of routings?
+			MXMadiBridge.changeMadiChannel(madiChannelDict[madiChannelSV.item]);
+			};		
+		};	
+		
+	// important for the Connection Dict! 	hier ein Funktion mit Madi Bridge Routings aus MXMadiBridge
 	//	routSV = MXSV( [ \off, \matrix ], 0);   	// has always at least these two items!
 	//	routSV = MXSV( [ \off ], 0);   	// has always at least this item!
 		routSV = MXSV( [ nil  ], 0);   	 
@@ -440,59 +454,83 @@ editable by MXDeviceManager
 	routSV_ { arg value;		
 		if (value != routSV.value) {
 			routSV.value = value;	
-		}
+		};
+	}
+	
+	madiChannelSV_ { arg value;		
+		if (value != madiChannelSV.value) {
+			madiChannelSV.value = value;	
+		};
 	}
 
 	routSVItem_ { arg item;		
 		if (item != routSV.item) {
 			routSV.item = item;	
-		}
+		};
+	}
+		
+	madiChannelSVItem_ { arg item;		
+		if (item != madiChannelSV.item) {
+			madiChannelSV.item = item;	
+		};
 	}
 
 	controlSV_ { arg value;		
 		if (value != controlSV.value) {
 			controlSV.value = value;	
-		}
+		};
 	}
 
 	phones_ { arg value;		
 		if (value != phones.value) {
 			phones.value = value;	
-		}
+		};
 	}
 
 	near_ { arg value;		
 		if (value != near.value) {
 			near.value = value;	
-		}
+		};
 	}
 
 	wfs_ { arg value;		
 		if (value != wfs.value) {
 			wfs.value = value;	
-		}
+		};
 	}
 
 	dome_ { arg value;		
 		if (value != dome.value) {
 			dome.value = value;	
-		}
+		};
 	}
 
 	multimeter_ { arg value;		
 		if (value != multimeter.value) {
 			multimeter.value = value;	
-		}
+		};
 	}
 
 	spectral_ { arg value;		
 		if (value != spectral.value) {
 			spectral.value = value;	
-		}
+		};
 	}
 
+	getMadiChannels {
+		var name, channel;
+		//madiChannelDict = MXMadiBridge.madiBridgeChannels;
+		madiChannelSV.items = ["choose input Source"];
+		
+		MXMadiBridge.madiBridgeChannels.do({arg assoc, r;
+			name = assoc.key.asSymbol;
+			channel = assoc.value.asInteger;  //oder als Integer/Hex
+			madiChannelDict.add(name -> channel);
+			madiChannelSV.items = madiChannelSV.items ++ name;
+		});
+	}
 
-
+	
 
 	getMonitorPresets { // collect all monitorpresets that doesn't have more inputs than the number of channels in this device:
 		var name, connectionarray;
@@ -539,6 +577,9 @@ editable by MXDeviceManager
 			{ \in } 	{Ê	inputs = ioArray;  		// Array of MXInputs
 						outputs = busArray; 	// Array of MXBusses 
 					}	
+			{ \madibridgeIN } 	{Ê	inputs = ioArray; 	// Array of MXInputs  added by jg
+						outputs = busArray; 	     // Array of MXBusses 
+					}	
 			{ \out } 	{Ê	inputs = busArray; 	// Array of MXBusses 
 						outputs = ioArray;  	// Array of MXOutputs
 					}	
@@ -552,6 +593,8 @@ editable by MXDeviceManager
 	//	if (type ==  \in) {Êmeter = MXSimpleMeter(this, busArray.collect(_.busNum)) };
 		meter = MXSimpleMeter(this, outputs);
 		this.getMonitorPresets;
+		//if (type == \madibridgeIN){this.getMadiChannels}
+		this.getMadiChannels;
 	}
 	
 	unsetSR { // to be called before sample rate changes
@@ -784,10 +827,10 @@ MXDeviceView {
 	routingMenu
 		alt: showMatrixButton (trigger)
 */
-	var <parent, <bounds;  // parent: sourcesTab of routingTabs
-	var <panel, <titleButton, <meterView, <muteButton, <gainNumber, <phonesButton, <nearButton, <wfsButton, <domeButton, <matrixButton;
+	var <parent, <bounds, dev;  // parent: sourcesTab of routingTabs
+	var <panel, <titleButton, <meterView, <muteButton, <gainNumber, <phonesButton, <nearButton, <wfsButton, <domeButton, <matrixButton ;
 	var <multimeterButton, <spectralButton;
-	var <routingMenu, <showMatrixButton;
+	var <routingMenu, <showMatrixButton, <madiTitleMenu;
 	var <controlMenu;
 	var <font, <smallFont, <titleFont;
 	var <backgroundColorOff, <backgroundColorOn;
@@ -799,11 +842,11 @@ MXDeviceView {
 	var <titleFrameColor;	
 	var <device;	// associated inDevice
 	
-	*new { arg parent, bounds;
-		^super.new.initView(parent, bounds)
+	*new { arg parent, bounds, dev;
+		^super.new.initView(parent, bounds, dev)
 	}
 
-	initView { arg argparent, argbounds;
+	initView { arg argparent, argbounds, dev;
 		var panelrect, button1size, button2size, button3size, hgap=4, vgap=4, radius=5, shifty= 0, border=0;
 		parent = argparent;
 		bounds = argbounds.asRect;
@@ -839,7 +882,16 @@ MXDeviceView {
 					   ["device", titleTextColorOn, titleBackColorOn] ])
 			.font_(titleFont);
 	*/
-	
+		
+		if (dev.type == \madibridgeIN) { 
+		madiTitleMenu = SCPopUpMenu(panel, button1size)
+			.font_(titleFont)
+			.stringColor_(titleTextColorOn)
+			.background_(Color.blue(0.9,0.2)) 
+		 	.items_( (0 .. 3).collect(_.asString) );
+			
+		}{
+		
 		titleButton = MXStringView(panel, button1size, radius)
 			.shifty_(-2)
 			.font_(titleFont)
@@ -850,7 +902,10 @@ MXDeviceView {
 		//	.border_(1)
 		//	.borderColor_(Color.grey(0.5))
 			.inset_(0)
-			.string_("device");
+			.string_("device")
+			;
+		};
+		
 
 		muteButton = MXButton(panel, button3size, radius)
 			.shifty_(shifty)
@@ -918,10 +973,26 @@ MXDeviceView {
 			.stringColor_(buttonTextColorOn)
 			.background_(buttonBackColorOff)
 			.items_( (0 .. 5).collect(_.asString) )
+		
 			;
-	
+		/*	
+		madiTitleMenu = SCPopUpMenu(panel, button1size)
+			.shifty_(-2)
+			.font_(titleFont)
+			.stringColor_(titleTextColorOn)
+			.align_(\center)
+			.orientation_(\right)
+			.background_(titleBackColorOn)
+		//	.border_(1)
+		//	.borderColor_(Color.grey(0.5))
+			.inset_(0)
+		     .items_( (0 .. 5).collect(_.asString) )
+		//   .items_("madi1" , "madi 2", "madi 3")	
+			;
+	 	*/
+	 	
 		panel.decorator.reset;
-		panel.decorator.shift(4, 4);
+		panel.decorator.shift(193, 4); // hier wird die MeterLed versetzt
 			
 		meterView = MXLEDView(panel, 17@17)
 			.background_(Color.green(0.0, 0.8))
@@ -942,6 +1013,7 @@ MXDeviceView {
 		};			
 		
 		phonesButton.visible_(bool);
+		madiTitleMenu.visible_(bool);
 	//	nearButton.visible_(bool);
 		wfsButton.visible_(bool);
 		domeButton.visible_(bool);
@@ -956,10 +1028,26 @@ MXDeviceView {
 	
 	connect { arg dev;
 		device = dev;
-		{	
+		{		
+     	//	titleButton.connect(device.active);
+		//	this.enable(true);	
+		
+		
+	// connecte madiTitleMenu mit dem madi Channel Select Value 
+	if (device.type == \madibridgeIN) {
+				// madiTitleMenu.visible_(1);
+				// titleButton.visible_(0);
+		madiTitleMenu.connect(device.madiChannelSV);
+						
+		}{
+				//titleButton.visible_(true);
+				//madiTitleMenu.visible_(false);
 		titleButton.string = device.name;
-	//	titleButton.connect(device.active);
-	//	this.enable(true);
+		};
+		
+
+	
+	     
 		dev.guifunc = {Êarg value;
 	//		this.enable(value.booleanValue);		
 		};
@@ -973,7 +1061,9 @@ MXDeviceView {
 		wfsButton.connect(device.wfs);
 		domeButton.connect(device.dome);
 		// matrixButton > ??
+		
 		routingMenu.connect(device.routSV);
+		
 		device.routSV.action = { arg changer, what;  
 			if ( changer.value > 0 ) {
 				{ÊroutingMenu.background = Color.green; }.defer;
@@ -981,6 +1071,7 @@ MXDeviceView {
 				{ÊroutingMenu.background = buttonBackColorOff;}.defer;
 			}
 		};
+		
 		controlMenu.connect(device.controlSV);
 		device.controlSV.action = { arg changer, what;  
 			if ( changer.value > 0 ) {
@@ -1011,7 +1102,7 @@ MXDeviceManager {  // singleton !
 	erzeugen, kopieren und loeschen von MXDevices
 	laden und speichern von einzelnen MXDevices
 	editieren von MXDevices (channels/MXIOs, name)
-	GUI (active, gain, phase, delay) und MXSimpleMeter anzeigen
+	GUI (, gain, phase, delay) und MXSimpleMeter anzeigen
 */
 	classvar <inDevices;		// Array of MXInDevices
 	classvar <outDevices;		// Array of MXOutDevices
@@ -1046,6 +1137,16 @@ MXDeviceManager {  // singleton !
 			} { 
 				"WARNING: no input devices found in file".postln;
 			};
+			
+// abfrage ob madi bridge vorhanden
+			if (dict.includesKey( \madibridgeIN )) { 
+				dict[\madibridgeIN].do {Êarg assoc, i;
+					this.addDeviceFromArray(\madibridgeIN, [assoc.key] ++ assoc.value );
+				}
+			} { 
+				"WARNING: no madi bridge Input routing found, Setup without madi bridge control".postln;
+			};
+
 			if (dict.includesKey( \monitors )) { 
 				dict[\monitors].do {Êarg assoc, i;
 					this.addDeviceFromArray(\monitorout, [assoc.key] ++ assoc.value );
@@ -1081,15 +1182,23 @@ MXDeviceManager {  // singleton !
 		busNums.add( 96000.0 -> array[2].clump(2).collect({ arg a; (a[0]..a[1]) }).flat.collect(_.asInteger - 1) );
 //		busNums.add( 48000.0 -> (( array[1][0] .. array[1][1] ) ).collect(_.asInteger - 1) );
 //		busNums.add( 96000.0 -> (( array[2][0] .. array[2][1] ) ).collect(_.asInteger - 1) );
-		if (type == \in) {
+		if (type == \in)  {
 			busNums[48000.0] = busNums[48000.0] + MXGlobals.numOutputs;
 			busNums[96000.0] = busNums[96000.0] + MXGlobals.numOutputs;
 		};
+		
+
+		if (type == \madibridgeIN) {
+			busNums[48000.0] = busNums[48000.0] + MXGlobals.numOutputs;
+			busNums[96000.0] = busNums[96000.0] + MXGlobals.numOutputs;
+		};
+
 
 	//	busNums[48000.0].postln;
 		ioDict = Dictionary.new;
 		switch (type)
 		 	{\in} 			{ cons =  MXMain.ioManager.inputs }
+		 	{\madibridgeIN} 	{ cons =  MXMain.ioManager.inputs }  //added by jg
 		 	{\out} 			{ cons =  MXMain.ioManager.outputs }
 		 	{\monitorout} 	{ cons =  MXMain.ioManager.outputs }
 			;
@@ -1103,7 +1212,8 @@ MXDeviceManager {  // singleton !
 			device = MXMonitorDevice(name, type, ioDict);
 			device.function = function.asSymbol;
 			device.gain = (function == \sub).if(-20, -20);
-		} {   
+		} {  
+			// ioDict.postln; type.postln; name.postln; //added by jg 
 			device = MXDevice(name, type, ioDict);
 			device.gain = 0;
 		};
@@ -1117,12 +1227,14 @@ MXDeviceManager {  // singleton !
 
 		switch (type)
 		 	{\in} 			{ inDevices.add(device) }
+		 	{\madibridgeIN} 	{ inDevices.add(device) } //added by jg
 		 	{\out} 			{ outDevices.add(device) }
 		 	{\monitorout} 	{ 
 			 //	outDevices.add(device);
 			 	MXMonitorManager.addDevice(device);
 			 	 }
 		;		
+	inDevices.postln;
 	}
 	
 	*addDevice {
